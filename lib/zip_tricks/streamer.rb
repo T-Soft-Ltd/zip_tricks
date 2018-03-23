@@ -171,8 +171,10 @@ class ZipTricks::Streamer
   # @param crc32 [Integer] the CRC32 checksum of the entry when uncompressed
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_deflated_entry(filename:, compressed_size: 0, uncompressed_size: 0, crc32: 0, use_data_descriptor: false)
-    add_file_and_write_local_header(filename: filename, crc32: crc32,
+  def add_deflated_entry(filename:, modification_date: Time.now.utc, compressed_size: 0, uncompressed_size: 0, crc32: 0, use_data_descriptor: false)
+    add_file_and_write_local_header(filename: filename,
+                                    modification_date: modification_date,
+                                    crc32: crc32,
                                     storage_mode: DEFLATED,
                                     compressed_size: compressed_size,
                                     uncompressed_size: uncompressed_size,
@@ -193,8 +195,9 @@ class ZipTricks::Streamer
   # @param crc32 [Integer] the CRC32 checksum of the entry when uncompressed
   # @param use_data_descriptor [Boolean] whether the entry body will be followed by a data descriptor. When in use
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_stored_entry(filename:, size: 0, crc32: 0, use_data_descriptor: false)
+  def add_stored_entry(filename:, modification_date: Time.now.utc,  size: 0, crc32: 0, use_data_descriptor: false)
     add_file_and_write_local_header(filename: filename,
+                                    modification_date: modification_date,
                                     crc32: crc32,
                                     storage_mode: STORED,
                                     compressed_size: size,
@@ -207,8 +210,9 @@ class ZipTricks::Streamer
   #
   # @param dirname [String] the name of the directory in the archive
   # @return [Integer] the offset the output IO is at after writing the entry header
-  def add_empty_directory(dirname:)
+  def add_empty_directory(dirname:, modification_date: Time.now.utc)
     add_file_and_write_local_header(filename: dirname.to_s + '/',
+                                    modification_date: modification_date,
                                     crc32: 0,
                                     storage_mode: STORED,
                                     compressed_size: 0,
@@ -251,8 +255,9 @@ class ZipTricks::Streamer
   # @param filename[String] the name of the file in the archive
   # @yield [#<<, #write] an object that the file contents must be written to that will be automatically closed
   # @return [#<<, #write, #close] an object that the file contents must be written to, has to be closed manually
-  def write_stored_file(filename)
+  def write_stored_file(filename, modification_date: Time.now.utc)
     add_stored_entry(filename: filename,
+                     modification_date: modification_date,
                      use_data_descriptor: true,
                      crc32: 0,
                      size: 0)
@@ -300,8 +305,9 @@ class ZipTricks::Streamer
   #
   # @param filename[String] the name of the file in the archive
   # @yield [#<<, #write] an object that the file contents must be written to
-  def write_deflated_file(filename)
+  def write_deflated_file(filename, modification_date: Time.now.utc)
     add_deflated_entry(filename: filename,
+                       modification_date: modification_date,
                        use_data_descriptor: true,
                        crc32: 0,
                        compressed_size: 0,
@@ -393,6 +399,7 @@ class ZipTricks::Streamer
   private
 
   def add_file_and_write_local_header(filename:,
+                                      modification_date:,
                                       crc32:,
                                       storage_mode:,
                                       compressed_size:,
@@ -420,7 +427,7 @@ class ZipTricks::Streamer
                   compressed_size,
                   uncompressed_size,
                   storage_mode,
-                  mtime = Time.now.utc,
+                  modification_date,
                   use_data_descriptor)
     @files << e
     @filenames_set << e.filename

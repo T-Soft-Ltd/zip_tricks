@@ -94,6 +94,8 @@ class ZipTricks::Streamer
 
   private_constant :DeflatedWriter, :StoredWriter, :STORED, :DEFLATED
 
+  attr_accessor :zip_comment
+
   # Creates a new Streamer on top of the given IO-ish object and yields it. Once the given block
   # returns, the Streamer will have it's `close` method called, which will write out the central
   # directory of the archive to the output.
@@ -119,6 +121,7 @@ class ZipTricks::Streamer
     @local_header_offsets = []
     @filenames_set = Set.new
     @writer = writer
+    @zip_comment = ZipTricks::ZipWriter.const_get('ZIP_TRICKS_COMMENT')
   end
 
   # Writes a part of a zip entry body (actual binary data of the entry) into the output stream.
@@ -343,7 +346,8 @@ class ZipTricks::Streamer
     @writer.write_end_of_central_directory(io: @out,
                                            start_of_central_directory_location: cdir_starts_at,
                                            central_directory_size: cdir_size,
-                                           num_files_in_archive: @files.length)
+                                           num_files_in_archive: @files.length,
+                                           comment: zip_comment)
 
     # Clear the files so that GC will not have to trace all the way to here to deallocate them
     @files.clear

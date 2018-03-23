@@ -495,4 +495,16 @@ describe ZipTricks::Streamer do
                                   'file_one (1).jpg', 'file_one (2).jpg', 'My.Super.file.txt.zip',
                                   'My.Super.file (1).txt.zip'])
   end
+
+  it 'uses `zip_comment` attribute when writing the end of central directory' do
+    fake_writer = double('Writer').as_null_object
+
+    expect(fake_writer).to receive(:write_end_of_central_directory) { |**kwargs|
+      expect(kwargs[:comment]).to eq('Zip Comment')
+    }
+
+    described_class.open(StringIO.new, writer: fake_writer) do |zip|
+      zip.zip_comment = 'Zip Comment'
+    end
+  end
 end
